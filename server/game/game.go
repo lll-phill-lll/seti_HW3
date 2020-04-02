@@ -11,10 +11,10 @@ const (
 )
 
 type game struct {
-	mu sync.Mutex
-	Id    int
-	Order int
-	Field [][]Figure
+	mu         sync.Mutex
+	Id         int
+	Order      int
+	Field      [][]Figure
 	IsFinished bool
 }
 
@@ -52,15 +52,15 @@ func (g *game) MarshalJSON() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	field := [][]string {
-		{g.Field[0][0].getLetter(), g.Field[0][1].getLetter(),g.Field[0][2].getLetter(),g.Field[0][3].getLetter(),g.Field[0][4].getLetter(),g.Field[0][5].getLetter(),g.Field[0][6].getLetter(),g.Field[0][7].getLetter()},
-		{g.Field[1][0].getLetter(), g.Field[1][1].getLetter(),g.Field[1][2].getLetter(),g.Field[1][3].getLetter(),g.Field[1][4].getLetter(),g.Field[1][5].getLetter(),g.Field[1][6].getLetter(),g.Field[1][7].getLetter()},
-		{g.Field[2][0].getLetter(), g.Field[2][1].getLetter(),g.Field[2][2].getLetter(),g.Field[2][3].getLetter(),g.Field[2][4].getLetter(),g.Field[2][5].getLetter(),g.Field[2][6].getLetter(),g.Field[2][7].getLetter()},
-		{g.Field[3][0].getLetter(), g.Field[3][1].getLetter(),g.Field[3][2].getLetter(),g.Field[3][3].getLetter(),g.Field[3][4].getLetter(),g.Field[3][5].getLetter(),g.Field[3][6].getLetter(),g.Field[3][7].getLetter()},
-		{g.Field[4][0].getLetter(), g.Field[4][1].getLetter(),g.Field[4][2].getLetter(),g.Field[4][3].getLetter(),g.Field[4][4].getLetter(),g.Field[4][5].getLetter(),g.Field[4][6].getLetter(),g.Field[4][7].getLetter()},
-		{g.Field[5][0].getLetter(), g.Field[5][1].getLetter(),g.Field[5][2].getLetter(),g.Field[5][3].getLetter(),g.Field[5][4].getLetter(),g.Field[5][5].getLetter(),g.Field[5][6].getLetter(),g.Field[5][7].getLetter()},
-		{g.Field[6][0].getLetter(), g.Field[6][1].getLetter(),g.Field[6][2].getLetter(),g.Field[6][3].getLetter(),g.Field[6][4].getLetter(),g.Field[6][5].getLetter(),g.Field[6][6].getLetter(),g.Field[6][7].getLetter()},
-		{g.Field[7][0].getLetter(), g.Field[7][1].getLetter(),g.Field[7][2].getLetter(),g.Field[7][3].getLetter(),g.Field[7][4].getLetter(),g.Field[7][5].getLetter(),g.Field[7][6].getLetter(),g.Field[7][7].getLetter()},
+	field := [][]string{
+		{g.Field[0][0].getLetter(), g.Field[0][1].getLetter(), g.Field[0][2].getLetter(), g.Field[0][3].getLetter(), g.Field[0][4].getLetter(), g.Field[0][5].getLetter(), g.Field[0][6].getLetter(), g.Field[0][7].getLetter()},
+		{g.Field[1][0].getLetter(), g.Field[1][1].getLetter(), g.Field[1][2].getLetter(), g.Field[1][3].getLetter(), g.Field[1][4].getLetter(), g.Field[1][5].getLetter(), g.Field[1][6].getLetter(), g.Field[1][7].getLetter()},
+		{g.Field[2][0].getLetter(), g.Field[2][1].getLetter(), g.Field[2][2].getLetter(), g.Field[2][3].getLetter(), g.Field[2][4].getLetter(), g.Field[2][5].getLetter(), g.Field[2][6].getLetter(), g.Field[2][7].getLetter()},
+		{g.Field[3][0].getLetter(), g.Field[3][1].getLetter(), g.Field[3][2].getLetter(), g.Field[3][3].getLetter(), g.Field[3][4].getLetter(), g.Field[3][5].getLetter(), g.Field[3][6].getLetter(), g.Field[3][7].getLetter()},
+		{g.Field[4][0].getLetter(), g.Field[4][1].getLetter(), g.Field[4][2].getLetter(), g.Field[4][3].getLetter(), g.Field[4][4].getLetter(), g.Field[4][5].getLetter(), g.Field[4][6].getLetter(), g.Field[4][7].getLetter()},
+		{g.Field[5][0].getLetter(), g.Field[5][1].getLetter(), g.Field[5][2].getLetter(), g.Field[5][3].getLetter(), g.Field[5][4].getLetter(), g.Field[5][5].getLetter(), g.Field[5][6].getLetter(), g.Field[5][7].getLetter()},
+		{g.Field[6][0].getLetter(), g.Field[6][1].getLetter(), g.Field[6][2].getLetter(), g.Field[6][3].getLetter(), g.Field[6][4].getLetter(), g.Field[6][5].getLetter(), g.Field[6][6].getLetter(), g.Field[6][7].getLetter()},
+		{g.Field[7][0].getLetter(), g.Field[7][1].getLetter(), g.Field[7][2].getLetter(), g.Field[7][3].getLetter(), g.Field[7][4].getLetter(), g.Field[7][5].getLetter(), g.Field[7][6].getLetter(), g.Field[7][7].getLetter()},
 	}
 	return json.Marshal(field)
 

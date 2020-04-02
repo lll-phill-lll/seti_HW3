@@ -57,3 +57,51 @@ CHESS2020/04/02 22:38:15 COMMAND MOVE 14 15
 CHESS2020/04/02 22:38:19 COMMAND MOVE 14-15
  from login: mylog isAdmin false
 
+CHESS2020/04/02 23:18:11 auth success login: lolo isAdmin false
+
+CHESS2020/04/02 23:18:17 New command from login: lolo isAdmin false
+ is: ROOM 1
+
+CHESS2020/04/02 23:18:21 New command from login: lolo isAdmin false
+ is: ROOM NEW
+
+CHESS2020/04/02 23:18:21 New room {login: lolo isAdmin false
+ login:  isAdmin false
+ 0xc0000be080 false}
+CHESS2020/04/02 23:18:38 registred user login: hello isAdmin false
+
+CHESS2020/04/02 23:18:42 New command from login: hello isAdmin false
+ is: ROOM 1
+
+CHESS2020/04/02 23:18:48 COMMAND MOVE 12 13
+ from login: hello isAdmin false
+
+CHESS2020/04/02 23:18:52 COMMAND MOVE 12-13
+ from login: hello isAdmin false
+
+CHESS2020/04/02 23:18:57 COMMAND MOVE 12-13
+ from login: lolo isAdmin false
+
+CHESS2020/04/02 23:19:01 COMMAND MOVE 13-12
+ from login: hello isAdmin false
+
+CHESS2020/04/02 23:19:19 auth success login: hello isAdmin false
+
+CHESS2020/04/02 23:19:24 New command from login: hello isAdmin false
+ is: ROOM 1
+
+CHESS2020/04/02 23:19:30 COMMAND MOVE 14-15
+ from login: hello isAdmin false
+
+CHESS2020/04/02 23:19:41 COMMAND MOVE 43-54
+ from login: lolo isAdmin false
+
+CHESS2020/04/02 23:19:49 COMMAND MOVE 12-14
+ from login: lolo isAdmin false
+
+CHESS2020/04/02 23:19:53 COMMAND MOVE 12-14
+ from login: hello isAdmin false
+
+CHESS2020/04/02 23:19:57 COMMAND MOVE 14-12
+ from login: hello isAdmin false
+

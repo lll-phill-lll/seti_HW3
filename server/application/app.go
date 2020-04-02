@@ -19,12 +19,10 @@ func enableLog() {
 	MyLog = log.New(f, "CHESS", log.LstdFlags)
 }
 
-
-
 type App struct {
-	mu sync.Mutex
-	Rand *Rand
-	Serv *Serv
+	mu    sync.Mutex
+	Rand  *Rand
+	Serv  *Serv
 	Users []room.Player
 	Rooms []room.Room
 }
@@ -33,5 +31,3 @@ func (a *App) Start(host string) {
 	enableLog()
 	a.Serv.StartServe(host)
 }
-
-

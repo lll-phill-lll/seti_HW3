@@ -15,17 +15,17 @@ import (
 )
 
 type Serv struct {
-	Rand *Rand
+	Rand  *Rand
 	Users []room.Player
 	Rooms []room.Room
-	mu sync.Mutex
+	mu    sync.Mutex
 }
 
-func (s *Serv) GetRoom(id int, player room.Player) (room.Room, error){
+func (s *Serv) GetRoom(id int, player room.Player) (room.Room, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for num , r := range s.Rooms {
+	for num, r := range s.Rooms {
 		if r.Game.GetID() == id {
 			if r.Has2Players {
 				if r.WhitePlayer.Login == player.Login || r.BlackPlayer.Login == player.Login {
@@ -42,8 +42,6 @@ func (s *Serv) GetRoom(id int, player room.Player) (room.Room, error){
 	}
 	return room.Room{}, errors.New(constants.INCORRECT_ROOM_ID_ERROR)
 }
-
-
 
 // 127.0.0.1:8080
 func (s *Serv) StartServe(address string) {
@@ -87,7 +85,7 @@ func (s *Serv) checkAdmin(commands map[string]string) bool {
 	return false
 }
 
-func (s *Serv)checkAuth(commands map[string]string) (room.Player, error) {
+func (s *Serv) checkAuth(commands map[string]string) (room.Player, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -120,7 +118,7 @@ func (s *Serv)checkAuth(commands map[string]string) (room.Player, error) {
 	return curUser, nil
 }
 
-func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, error) {
+func (s *Serv) checkRegistration(commands map[string]string) (room.Player, bool, error) {
 	_, ok := commands[constants.REG_KEY]
 	if !ok {
 		return room.Player{}, false, nil
@@ -137,7 +135,7 @@ func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, 
 	}
 
 	curUser := room.Player{
-		Games: []game.Game{},
+		Games:    []game.Game{},
 		Login:    login,
 		Password: strings.Trim(password, "\n"),
 	}
@@ -154,9 +152,9 @@ func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, 
 	return curUser, true, nil
 }
 
-func (s *Serv)bytesToMap(bytes []byte) (map[string]string, error) {
+func (s *Serv) bytesToMap(bytes []byte) (map[string]string, error) {
 	splitted := strings.Split(string(bytes), " ")
-	if len(splitted) % 2 == 1 {
+	if len(splitted)%2 == 1 {
 		return nil, errors.New("not all keys has values")
 	}
 
@@ -164,7 +162,7 @@ func (s *Serv)bytesToMap(bytes []byte) (map[string]string, error) {
 	commands := make(map[string]string)
 	key := ""
 	for i := 0; i < len(splitted); i++ {
-		if i % 2 == 0 {
+		if i%2 == 0 {
 			key = splitted[i]
 		} else {
 			commands[key] = splitted[i]
@@ -174,7 +172,7 @@ func (s *Serv)bytesToMap(bytes []byte) (map[string]string, error) {
 	return commands, nil
 }
 
-func (s *Serv)handleAuth(conn net.Conn) {
+func (s *Serv) handleAuth(conn net.Conn) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 	if err != nil {
 		log.Println("client left..", err)
@@ -185,7 +183,7 @@ func (s *Serv)handleAuth(conn net.Conn) {
 	defer s.handleAuth(conn)
 
 	clientAddr := conn.RemoteAddr().String()
-	input := fmt.Sprintf(string(bufferBytes)+ " from " + clientAddr + "\n")
+	input := fmt.Sprintf(string(bufferBytes) + " from " + clientAddr + "\n")
 	log.Println(input)
 
 	commands, err := s.bytesToMap(bufferBytes)
@@ -229,7 +227,7 @@ func (s *Serv)handleAuth(conn net.Conn) {
 	s.handleCommands(conn, player)
 }
 
-func (s *Serv)handleAdmin(conn net.Conn) {
+func (s *Serv) handleAdmin(conn net.Conn) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
@@ -239,7 +237,6 @@ func (s *Serv)handleAdmin(conn net.Conn) {
 	}
 
 	defer s.handleAdmin(conn)
-
 
 	splitted := strings.Split(string(bufferBytes), " ")
 	if len(splitted) != 2 {
@@ -261,7 +258,7 @@ func (s *Serv)handleAdmin(conn net.Conn) {
 	conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
 }
 
-func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
+func (s *Serv) handleCommands(conn net.Conn, player room.Player) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
@@ -272,7 +269,6 @@ func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 
 	defer s.handleCommands(conn, player)
 	MyLog.Println("New command from", player, "is:", string(bufferBytes))
-
 
 	splitted := strings.Split(string(bufferBytes), " ")
 	if len(splitted) != 2 {
@@ -315,7 +311,7 @@ func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 	conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
 }
 
-func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room, player room.Player) {
+func (s *Serv) handleRoom(conn net.Conn, currRoom room.Room, player room.Player) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
@@ -343,17 +339,16 @@ func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room, player room.Player) 
 
 	order := currRoom.Game.GetOrder()
 	if currRoom.BlackPlayer.Login == player.Login {
-		if order % 2 != 1 {
+		if order%2 != 1 {
 			conn.Write([]byte(constants.NOT_YOUR_TURN_ERROR + "\n"))
 			return
 		}
 	} else {
-		if order % 2 != 0 {
+		if order%2 != 0 {
 			conn.Write([]byte(constants.NOT_YOUR_TURN_ERROR + "\n"))
 			return
 		}
 	}
-
 
 	move := strings.Split(splitted[1], "-")
 
