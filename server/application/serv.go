@@ -69,6 +69,22 @@ func (s *Serv) addNewRoom(room room.Room) {
 	s.Rooms = append(s.Rooms, room)
 }
 
+func (s *Serv) checkAdmin(commands map[string]string) bool {
+	login, ok := commands[constants.LOGIN_KEY]
+	if !ok {
+		return false
+	}
+	password, ok := commands[constants.PASSWORD_KEY]
+	if !ok {
+		return false
+	}
+
+	if login == constants.ADMIN_LOGIN && strings.Trim(password, "\n") == constants.ADMIN_PASSWORD {
+		return true
+	}
+	return false
+}
+
 func (s *Serv)checkAuth(commands map[string]string) (room.Player, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -190,6 +206,13 @@ func (s *Serv)handleAuth(conn net.Conn) {
 		return
 	}
 
+	isAdmin := s.checkAdmin(commands)
+	if isAdmin {
+		conn.Write([]byte(constants.SUCCESS_AUTH + "\n"))
+		s.handleAdmin(conn)
+		return
+	}
+
 	player, err = s.checkAuth(commands)
 	if err != nil {
 		conn.Write([]byte(err.Error() + "\n"))
@@ -200,6 +223,38 @@ func (s *Serv)handleAuth(conn net.Conn) {
 	log.Println("auth succ", err, string(bufferBytes))
 	conn.Write([]byte(constants.SUCCESS_AUTH + "\n"))
 	s.handleCommands(conn, player)
+}
+
+func (s *Serv)handleAdmin(conn net.Conn) {
+	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
+
+	if err != nil {
+		log.Println("client left..", err)
+		conn.Close()
+		return
+	}
+
+	defer s.handleAdmin(conn)
+
+
+	splitted := strings.Split(string(bufferBytes), " ")
+	if len(splitted) != 2 {
+		log.Println("Not 2 arguments")
+		conn.Write([]byte(constants.ARGUMENTS_NUMBER_ERROR + "\n"))
+		return
+	}
+	splitted[1] = strings.Trim(splitted[1], "\n")
+
+	if splitted[0] == constants.ADMIN_GET_KEY && splitted[1] == constants.ADMIN_PLAYERS {
+		allUsers := ""
+		for _, user := range s.Users {
+			allUsers += user.Login + "\n"
+		}
+		conn.Write([]byte(allUsers + "\n"))
+		return
+	}
+
+	conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
 }
 
 func (s *Serv)handleCommands(conn net.Conn, player room.Player) {

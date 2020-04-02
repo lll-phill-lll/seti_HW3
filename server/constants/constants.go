@@ -23,4 +23,9 @@ const (
 	GAME_ID_KEY = "GAME_ID"
 	MOVE_KEY = "MOVE"
 	REG_KEY = "REG"
+
+	ADMIN_LOGIN = "admin"
+	ADMIN_PASSWORD = "admin"
+	ADMIN_GET_KEY = "GET"
+	ADMIN_PLAYERS = "PLAYERS"
 )

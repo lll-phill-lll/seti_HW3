@@ -10,4 +10,5 @@ type Player struct {
 	Games []game.Game
 	Login string
 	Password string
+	IsAdmin bool
 }
