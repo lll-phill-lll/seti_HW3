@@ -59,10 +59,6 @@ func (s *Serv) addNewRoom(room room.Room) {
 	s.Rooms = append(s.Rooms, room)
 }
 
-func (s *Serv) playerByLogin(login string) {
-
-}
-
 func (s *Serv)checkAuth(commands map[string]string) (room.Player, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -119,6 +115,11 @@ func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, 
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	for _, user := range s.Users {
+		if user.Login == login {
+			return room.Player{}, true, errors.New(constants.NON_UNIQUE_LOGIN_ERROR)
+		}
+	}
 	s.Users = append(s.Users, curUser)
 
 	return curUser, true, nil
@@ -236,6 +237,7 @@ func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 			conn.Write([]byte(constants.INCORRECT_ROOM_ID_ERROR + "\n"))
 			return
 		}
+		conn.Write([]byte(constants.SUCCESS_ROOM + "\n"))
 		s.handleRoom(conn, currRoom)
 		return
 
