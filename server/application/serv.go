@@ -3,16 +3,37 @@ package application
 import (
 	"bufio"
 	"chess/server/constants"
+	"chess/server/game"
+	"chess/server/room"
 	"errors"
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"strings"
+	"sync"
 )
 
 type Serv struct {
 	Rand *Rand
+	Users []room.Player
+	Rooms []room.Room
+	mu sync.Mutex
 }
+
+func (s *Serv) GetRoom(id int) (room.Room, error){
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, r := range s.Rooms {
+		if r.Game.GetID() == id {
+			return r, nil
+		}
+	}
+	return room.Room{}, errors.New(fmt.Sprintf("room with id %d not found", id))
+}
+
+
 
 // 127.0.0.1:8080
 func (s *Serv) StartServe(address string) {
@@ -27,29 +48,83 @@ func (s *Serv) StartServe(address string) {
 			log.Fatal("tcp server accept error", err)
 		}
 
-		go handleAuth(conn)
+		go s.handleAuth(conn)
 	}
 
 }
 
-func checkAuth(commands map[string]string) error {
+func (s *Serv) addNewRoom(room room.Room) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Rooms = append(s.Rooms, room)
+}
+
+func (s *Serv) playerByLogin(login string) {
+
+}
+
+func (s *Serv)checkAuth(commands map[string]string) (room.Player, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	login, ok := commands[constants.LOGIN_KEY]
 	if !ok {
-		return errors.New(constants.LOGIN_ERROR)
+		return room.Player{}, errors.New(constants.LOGIN_ERROR)
 	}
+	isLogin := false
+	curUser := room.Player{}
+	for _, user := range s.Users {
+		if user.Login == strings.Trim(login, "\n") {
+			isLogin = true
+			curUser = user
+			break
+		}
+	}
+	if !isLogin {
+		return room.Player{}, errors.New(constants.WRONG_LOGIN_OR_PASSWORD_ERROR)
+	}
+
 	passw, ok := commands[constants.PASSWORD_KEY]
 	if !ok {
-		return errors.New(constants.PASSWORD_ERROR)
+		return room.Player{}, errors.New(constants.PASSWORD_ERROR)
 	}
 
-	if strings.Trim(login, "\n") == "yourmom" && strings.Trim(passw, "\n") == "gay" {
-		return nil
+	if strings.Trim(passw, "\n") != curUser.Password {
+		return room.Player{}, errors.New(constants.WRONG_LOGIN_OR_PASSWORD_ERROR)
 	}
 
-	return errors.New(constants.WRONG_LOGIN_OR_PASSWORD_ERROR)
+	return curUser, nil
 }
 
-func bytesToMap(bytes []byte) (map[string]string, error) {
+func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, error) {
+	_, ok := commands[constants.REG_KEY]
+	if !ok {
+		return room.Player{}, false, nil
+	}
+
+	login, ok := commands[constants.LOGIN_KEY]
+	if !ok {
+		return room.Player{}, true, errors.New(constants.LOGIN_ERROR)
+	}
+
+	password, ok := commands[constants.LOGIN_KEY]
+	if !ok {
+		return room.Player{}, true, errors.New(constants.PASSWORD_ERROR)
+	}
+
+	curUser := room.Player{
+		Games: []game.Game{},
+		Login:    login,
+		Password: strings.Trim(password, "\n"),
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Users = append(s.Users, curUser)
+
+	return curUser, true, nil
+}
+
+func (s *Serv)bytesToMap(bytes []byte) (map[string]string, error) {
 	splitted := strings.Split(string(bytes), " ")
 	if len(splitted) % 2 == 1 {
 		return nil, errors.New("not all keys has values")
@@ -69,7 +144,7 @@ func bytesToMap(bytes []byte) (map[string]string, error) {
 	return commands, nil
 }
 
-func handleAuth(conn net.Conn) {
+func (s *Serv)handleAuth(conn net.Conn) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 	if err != nil {
 		log.Println("client left..", err)
@@ -77,20 +152,34 @@ func handleAuth(conn net.Conn) {
 		return
 	}
 
-	defer handleAuth(conn)
+	defer s.handleAuth(conn)
 
 	clientAddr := conn.RemoteAddr().String()
 	input := fmt.Sprintf(string(bufferBytes)+ " from " + clientAddr + "\n")
 	log.Println(input)
 
-	commands, err := bytesToMap(bufferBytes)
+	commands, err := s.bytesToMap(bufferBytes)
 	if err != nil {
 		conn.Write([]byte(err.Error() + "\n"))
 		log.Println("error with command", err, string(bufferBytes))
 		return
 	}
 
-	err = checkAuth(commands)
+	player, isReg, err := s.checkRegistration(commands)
+	if err != nil {
+		conn.Write([]byte(err.Error() + "\n"))
+		log.Println("auth fail", err, string(bufferBytes))
+		return
+	}
+
+	if isReg {
+		log.Println("reg succ", err, string(bufferBytes))
+		conn.Write([]byte(constants.SUCCESS_REG + "\n"))
+		s.handleCommands(conn, player)
+		return
+	}
+
+	player, err = s.checkAuth(commands)
 	if err != nil {
 		conn.Write([]byte(err.Error() + "\n"))
 		log.Println("auth fail", err, string(bufferBytes))
@@ -99,10 +188,10 @@ func handleAuth(conn net.Conn) {
 
 	log.Println("auth succ", err, string(bufferBytes))
 	conn.Write([]byte(constants.SUCCESS_AUTH + "\n"))
-	handleCommands(conn)
+	s.handleCommands(conn, player)
 }
 
-func handleCommands(conn net.Conn) {
+func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
@@ -111,7 +200,7 @@ func handleCommands(conn net.Conn) {
 		return
 	}
 
-	defer handleCommands(conn)
+	defer s.handleCommands(conn, player)
 
 
 	splitted := strings.Split(string(bufferBytes), " ")
@@ -123,14 +212,108 @@ func handleCommands(conn net.Conn) {
 	splitted[1] = strings.Trim(splitted[1], "\n")
 
 	if splitted[0] == constants.ROOM && splitted[1] == constants.NEW {
-		conn.Write([]byte(constants.GAME_ID_KEY + " 5\n"))
-		// TODO: add generator
-		// TODO: redirect to game handler
+		newRoomID := s.Rand.getNextID()
+		conn.Write([]byte(fmt.Sprintf("%s %d\n", constants.GAME_ID_KEY, newRoomID)))
+		newGame := game.NewGame(newRoomID)
+		currRoom := room.Room{
+			WhitePlayer: room.Player{},
+			BlackPlayer: room.Player{},
+			Game:        newGame,
+			Has2Players: false,
+		}
+		s.addNewRoom(currRoom)
+		s.handleRoom(conn, currRoom)
 		return
 	}
 	if splitted[0] == constants.ROOM {
-		conn.Write([]byte(constants.GAME_ID_KEY + " " + splitted[1] + "\n"))
+		id, err := strconv.Atoi(splitted[1])
+		if err != nil {
+			conn.Write([]byte(constants.INCORRECT_ROOM_ID_ERROR + "\n"))
+			return
+		}
+		currRoom, err := s.GetRoom(id)
+		if err != nil {
+			conn.Write([]byte(constants.INCORRECT_ROOM_ID_ERROR + "\n"))
+			return
+		}
+		s.handleRoom(conn, currRoom)
 		return
+
 	}
 	conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
+}
+
+func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room) {
+	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
+
+	if err != nil {
+		log.Println("client left..", err)
+		conn.Close()
+		return
+	}
+
+	defer s.handleRoom(conn, currRoom)
+
+	splitted := strings.Split(string(bufferBytes), " ")
+	if len(splitted) != 2 {
+		log.Println("Not 2 arguments")
+		conn.Write([]byte(constants.ARGUMENTS_NUMBER_ERROR + "\n"))
+		return
+	}
+
+	command := splitted[0]
+	if command != constants.MOVE_KEY {
+		log.Println("incorrect move" + string(bufferBytes))
+		conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
+		return
+	}
+
+	move := strings.Split(splitted[1], "-")
+
+	if len(move) != 2 {
+		log.Println("incorrect move" + string(bufferBytes))
+		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
+		return
+	}
+	move[1] = strings.Trim(move[1], "\n")
+	if len(move[0]) != 2 || len(move[1]) != 2 {
+		log.Println("incorrect move" + string(bufferBytes))
+		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
+		return
+	}
+
+	from, err := strconv.Atoi(move[0])
+	if err != nil {
+		log.Println(err)
+		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
+		return
+	}
+
+	to, err := strconv.Atoi(move[0])
+	if err != nil {
+		log.Println(err)
+		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
+		return
+	}
+
+	fromX := from / 10
+	fromY := from % 10
+
+	toX := to / 10
+	toY := to % 10
+
+	err = currRoom.Game.MakeMove(fromX, fromY, toX, toY)
+	if err != nil {
+		log.Println(err)
+		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
+		return
+	}
+	marshalledGame, err := currRoom.Game.MarshalJSON()
+	if err != nil {
+		log.Println(err)
+		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
+		return
+	}
+	marshalledGame = append(marshalledGame, []byte("\n")...)
+	conn.Write(marshalledGame)
 }

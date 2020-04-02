@@ -3,7 +3,7 @@ package application
 import "sync"
 
 type Rand struct {
-	mu *sync.Mutex
+	mu sync.Mutex
 	lastNum int
 }
 

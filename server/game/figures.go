@@ -39,6 +39,13 @@ type pawn struct {
 	color       int
 }
 
+func (p *pawn) getLetter() string {
+	if p.color == 1 {
+		return "P"
+	}
+	return "p"
+}
+
 func (p *pawn) isNoFig() bool {
 	return false
 }
@@ -55,6 +62,13 @@ type rook struct {
 	currentPosX int
 	currentPosY int
 	color       int
+}
+
+func (r *rook) getLetter() string {
+	if r.color == 1 {
+		return "R"
+	}
+	return "r"
 }
 
 func (r *rook) isNoFig() bool {
@@ -75,6 +89,13 @@ type knight struct {
 	color       int
 }
 
+func (kn *knight) getLetter() string {
+	if kn.color == 1 {
+		return "KN"
+	}
+	return "kn"
+}
+
 func (kn *knight) isNoFig() bool {
 	return false
 }
@@ -91,6 +112,13 @@ type bishop struct {
 	currentPosX int
 	currentPosY int
 	color       int
+}
+
+func (b *bishop) getLetter() string {
+	if b.color == 1 {
+		return "B"
+	}
+	return "b"
 }
 
 func (b *bishop) isNoFig() bool {
@@ -111,6 +139,13 @@ type king struct {
 	color       int
 }
 
+func (kg *king) getLetter() string {
+	if kg.color == 1 {
+		return "KG"
+	}
+	return "kg"
+}
+
 func (kg *king) isNoFig() bool {
 	return false
 }
@@ -129,6 +164,12 @@ type queen struct {
 	color       int
 }
 
+func (q *queen) getLetter() string {
+	if q.color == 1 {
+		return "Q"
+	}
+	return "q"
+}
 func (q *queen) isNoFig() bool {
 	return false
 }
@@ -144,6 +185,10 @@ func (q *queen) makeMove(x, y int) error {
 type noFig struct {
 	currentPosX int
 	currentPosY int
+}
+
+func (nf *noFig) getLetter() string {
+	return "."
 }
 
 func (nf *noFig) isNoFig() bool {

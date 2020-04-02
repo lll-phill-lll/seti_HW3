@@ -1,17 +1,34 @@
 package game
 
+import (
+	"encoding/json"
+	"sync"
+)
+
 const (
 	White int = 0
 	Black int = 1
 )
 
 type game struct {
+	mu sync.Mutex
 	Id    int
 	Order int
 	Field [][]Figure
+	IsFinished bool
+}
+
+func (g *game) GetID() int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	return g.Id
 }
 
 func (g *game) MakeMove(x1, y1, x2, y2 int) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
 	err := g.Field[x1][y1].makeMove(x2, y2)
 	if err != nil {
 		return err
@@ -19,11 +36,30 @@ func (g *game) MakeMove(x1, y1, x2, y2 int) error {
 
 	g.Field[x2][y2] = g.Field[x1][y1]
 	g.Field[x1][y1] = newNoFig(x1, y1)
+	g.Order++
 
 	return nil
 }
 
-func newGame(id int) Game {
+func (g *game) MarshalJSON() ([]byte, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	field := [][]string {
+		{g.Field[0][0].getLetter(), g.Field[0][1].getLetter(),g.Field[0][2].getLetter(),g.Field[0][3].getLetter(),g.Field[0][4].getLetter(),g.Field[0][5].getLetter(),g.Field[0][6].getLetter(),g.Field[0][7].getLetter()},
+		{g.Field[1][0].getLetter(), g.Field[1][1].getLetter(),g.Field[1][2].getLetter(),g.Field[1][3].getLetter(),g.Field[1][4].getLetter(),g.Field[1][5].getLetter(),g.Field[1][6].getLetter(),g.Field[1][7].getLetter()},
+		{g.Field[2][0].getLetter(), g.Field[2][1].getLetter(),g.Field[2][2].getLetter(),g.Field[2][3].getLetter(),g.Field[2][4].getLetter(),g.Field[2][5].getLetter(),g.Field[2][6].getLetter(),g.Field[2][7].getLetter()},
+		{g.Field[3][0].getLetter(), g.Field[3][1].getLetter(),g.Field[3][2].getLetter(),g.Field[3][3].getLetter(),g.Field[3][4].getLetter(),g.Field[3][5].getLetter(),g.Field[3][6].getLetter(),g.Field[3][7].getLetter()},
+		{g.Field[4][0].getLetter(), g.Field[4][1].getLetter(),g.Field[4][2].getLetter(),g.Field[4][3].getLetter(),g.Field[4][4].getLetter(),g.Field[4][5].getLetter(),g.Field[4][6].getLetter(),g.Field[4][7].getLetter()},
+		{g.Field[5][0].getLetter(), g.Field[5][1].getLetter(),g.Field[5][2].getLetter(),g.Field[5][3].getLetter(),g.Field[5][4].getLetter(),g.Field[5][5].getLetter(),g.Field[5][6].getLetter(),g.Field[5][7].getLetter()},
+		{g.Field[6][0].getLetter(), g.Field[6][1].getLetter(),g.Field[6][2].getLetter(),g.Field[6][3].getLetter(),g.Field[6][4].getLetter(),g.Field[6][5].getLetter(),g.Field[6][6].getLetter(),g.Field[6][7].getLetter()},
+		{g.Field[7][0].getLetter(), g.Field[7][1].getLetter(),g.Field[7][2].getLetter(),g.Field[7][3].getLetter(),g.Field[7][4].getLetter(),g.Field[7][5].getLetter(),g.Field[7][6].getLetter(),g.Field[7][7].getLetter()},
+	}
+	return json.Marshal(field)
+
+}
+
+func NewGame(id int) Game {
 	return &game{
 		Id:    id,
 		Order: 0,
