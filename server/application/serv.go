@@ -21,16 +21,26 @@ type Serv struct {
 	mu sync.Mutex
 }
 
-func (s *Serv) GetRoom(id int) (room.Room, error){
+func (s *Serv) GetRoom(id int, player room.Player) (room.Room, error){
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for _, r := range s.Rooms {
+	for num , r := range s.Rooms {
 		if r.Game.GetID() == id {
-			return r, nil
+			if r.Has2Players {
+				if r.WhitePlayer.Login == player.Login || r.BlackPlayer.Login == player.Login {
+					return r, nil
+				} else {
+					return room.Room{}, errors.New(constants.INCORRECT_ROOM_ID_ERROR)
+				}
+			} else {
+				s.Rooms[num].BlackPlayer = player
+				s.Rooms[num].Has2Players = true
+				return s.Rooms[num], nil
+			}
 		}
 	}
-	return room.Room{}, errors.New(fmt.Sprintf("room with id %d not found", id))
+	return room.Room{}, errors.New(constants.INCORRECT_ROOM_ID_ERROR)
 }
 
 
@@ -103,7 +113,7 @@ func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, 
 		return room.Player{}, true, errors.New(constants.LOGIN_ERROR)
 	}
 
-	password, ok := commands[constants.LOGIN_KEY]
+	password, ok := commands[constants.PASSWORD_KEY]
 	if !ok {
 		return room.Player{}, true, errors.New(constants.PASSWORD_ERROR)
 	}
@@ -217,13 +227,13 @@ func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 		conn.Write([]byte(fmt.Sprintf("%s %d\n", constants.GAME_ID_KEY, newRoomID)))
 		newGame := game.NewGame(newRoomID)
 		currRoom := room.Room{
-			WhitePlayer: room.Player{},
+			WhitePlayer: player,
 			BlackPlayer: room.Player{},
 			Game:        newGame,
 			Has2Players: false,
 		}
 		s.addNewRoom(currRoom)
-		s.handleRoom(conn, currRoom)
+		s.handleRoom(conn, currRoom, player)
 		return
 	}
 	if splitted[0] == constants.ROOM {
@@ -232,20 +242,20 @@ func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 			conn.Write([]byte(constants.INCORRECT_ROOM_ID_ERROR + "\n"))
 			return
 		}
-		currRoom, err := s.GetRoom(id)
+		currRoom, err := s.GetRoom(id, player)
 		if err != nil {
 			conn.Write([]byte(constants.INCORRECT_ROOM_ID_ERROR + "\n"))
 			return
 		}
 		conn.Write([]byte(constants.SUCCESS_ROOM + "\n"))
-		s.handleRoom(conn, currRoom)
+		s.handleRoom(conn, currRoom, player)
 		return
 
 	}
 	conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
 }
 
-func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room) {
+func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room, player room.Player) {
 	bufferBytes, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
@@ -254,7 +264,7 @@ func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room) {
 		return
 	}
 
-	defer s.handleRoom(conn, currRoom)
+	defer s.handleRoom(conn, currRoom, player)
 
 	splitted := strings.Split(string(bufferBytes), " ")
 	if len(splitted) != 2 {
@@ -269,6 +279,20 @@ func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room) {
 		conn.Write([]byte(constants.UNKNOWN_COMMAND_ERROR + "\n"))
 		return
 	}
+
+	order := currRoom.Game.GetOrder()
+	if currRoom.BlackPlayer.Login == player.Login {
+		if order % 2 != 1 {
+			conn.Write([]byte(constants.NOT_YOUR_TURN_ERROR + "\n"))
+			return
+		}
+	} else {
+		if order % 2 != 0 {
+			conn.Write([]byte(constants.NOT_YOUR_TURN_ERROR + "\n"))
+			return
+		}
+	}
+
 
 	move := strings.Split(splitted[1], "-")
 
@@ -291,7 +315,7 @@ func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room) {
 		return
 	}
 
-	to, err := strconv.Atoi(move[0])
+	to, err := strconv.Atoi(move[1])
 	if err != nil {
 		log.Println(err)
 		conn.Write([]byte(constants.INCORRECT_MOVE_ERROR + "\n"))
