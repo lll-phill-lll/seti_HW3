@@ -66,6 +66,7 @@ func (s *Serv) StartServe(address string) {
 func (s *Serv) addNewRoom(room room.Room) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	MyLog.Println("New room", room)
 	s.Rooms = append(s.Rooms, room)
 }
 
@@ -80,6 +81,7 @@ func (s *Serv) checkAdmin(commands map[string]string) bool {
 	}
 
 	if login == constants.ADMIN_LOGIN && strings.Trim(password, "\n") == constants.ADMIN_PASSWORD {
+		MyLog.Println("admin logged")
 		return true
 	}
 	return false
@@ -146,6 +148,7 @@ func (s *Serv)checkRegistration(commands map[string]string) (room.Player, bool, 
 			return room.Player{}, true, errors.New(constants.NON_UNIQUE_LOGIN_ERROR)
 		}
 	}
+	MyLog.Println("registred user", curUser)
 	s.Users = append(s.Users, curUser)
 
 	return curUser, true, nil
@@ -221,6 +224,7 @@ func (s *Serv)handleAuth(conn net.Conn) {
 	}
 
 	log.Println("auth succ", err, string(bufferBytes))
+	MyLog.Println("auth success", player)
 	conn.Write([]byte(constants.SUCCESS_AUTH + "\n"))
 	s.handleCommands(conn, player)
 }
@@ -267,6 +271,7 @@ func (s *Serv)handleCommands(conn net.Conn, player room.Player) {
 	}
 
 	defer s.handleCommands(conn, player)
+	MyLog.Println("New command from", player, "is:", string(bufferBytes))
 
 
 	splitted := strings.Split(string(bufferBytes), " ")
@@ -320,6 +325,7 @@ func (s *Serv)handleRoom(conn net.Conn, currRoom room.Room, player room.Player) 
 	}
 
 	defer s.handleRoom(conn, currRoom, player)
+	MyLog.Println("COMMAND", string(bufferBytes), "from", player)
 
 	splitted := strings.Split(string(bufferBytes), " ")
 	if len(splitted) != 2 {

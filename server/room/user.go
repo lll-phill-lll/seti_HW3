@@ -2,6 +2,7 @@ package room
 
 import (
 	"chess/server/game"
+	"fmt"
 	"net"
 )
 
@@ -11,4 +12,8 @@ type Player struct {
 	Login string
 	Password string
 	IsAdmin bool
+}
+
+func (p Player) String() string{
+	return fmt.Sprintln("login:", p.Login, "isAdmin", p.IsAdmin)
 }
